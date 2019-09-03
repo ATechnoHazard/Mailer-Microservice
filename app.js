@@ -9,8 +9,13 @@ if (!process.env.SENDGRID_API_KEY) {
     process.exit();
 }
 
-if (!process.env.ACCESS_TOKEN) {
-    console.log("Environment variable ACCESS_TOKEN is not set. Exiting");
+if (!process.env.BASE_URL) {
+    console.log("Environment variable BASE_URL is not set. Exiting");
+    process.exit()
+}
+
+if (!process.env.FROM_EMAIL) {
+    console.log("Environment variable FROM_EMAIL is not set. Exiting");
     process.exit()
 }
 

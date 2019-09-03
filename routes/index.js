@@ -8,25 +8,17 @@ const mail = require('@sendgrid/mail');
 const axios = require('axios');
 const qr = require('qrcode');
 
-const TEST_API_KEY = process.env.SENDGRID_API_KEY;
-const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+const BASE_URL = process.env.BASE_URL;
+const FROM_EMAIL = process.env.FROM_EMAIL;
 
-console.log(TEST_API_KEY);
-
-mail.setApiKey(TEST_API_KEY);
+mail.setApiKey(SENDGRID_API_KEY);
 
 router.get('/', (req, res) => {
     res.status(200).send({
         status: 'Health check succeeded.'
     });
 });
-
-// router.post('/testHtml', (req, res) => {
-//     console.log(req.body);
-//     // res.status(200).send(req.body);
-//     res.status(200).send(converter.makeHtml(req.body.markdown));
-// });
-
 
 /**
  * @api {post} /sendMail
@@ -87,8 +79,7 @@ router.post('/sendMail', [
     check('sendTo').not().isEmpty().isIn(['absent', 'present', 'both']),
     check('gender').not().isEmpty().isIn(['male', 'female', 'both']),
     check('isMarkdown').not().isEmpty().isBoolean(),
-    check('day').not().isEmpty().isInt(),
-    check('x-access-token').not().isEmpty().isIn([ACCESS_TOKEN])
+    check('day').not().isEmpty().isInt()
 ], async (req, res) => {
     const errors = validationResult(req);
     const accessToken = req.header('x-access-token');
@@ -99,11 +90,17 @@ router.post('/sendMail', [
         });
     } else {
         const {eventName, mailSubject, mailBody, sendTo, gender, isMarkdown, day} = req.body;
+        const instance = axios.create({
+            baseURL: BASE_URL,
+            timeout: 1000,
+            headers: {'Authorization': accessToken}
+        });
+
         let response;
         switch (sendTo) {
             case 'absent':
                 try {
-                    response = await axios.post('http://139.59.9.221/api/v1/simple-projection/project-absent', {
+                    response = await instance.post('simple-projection/project-absent', {
                         event: eventName,
                         day: day,
                         query: {
@@ -117,7 +114,7 @@ router.post('/sendMail', [
                 break;
             case 'present':
                 try {
-                    response = await axios.post('http://139.59.9.221/api/v1/simple-projection/project-absent', {
+                    response = await instance.post('simple-projection/project-absent', {
                         event: eventName,
                         day: day,
                         query: {
@@ -131,7 +128,7 @@ router.post('/sendMail', [
                 break;
             case  'both':
                 try {
-                    response = await axios.post('http://139.59.9.221/api/v1/simple-projection/project-all', {
+                    response = await instance.post('simple-projection/project-all', {
                         event: eventName,
                         query: {
                             key: 'gender',
@@ -168,7 +165,7 @@ router.post('/sendMail', [
         for (const participant of response.rs) {
             const msg = {
                 to: participant.email,
-                from: 'test@example.com',
+                from: FROM_EMAIL,
                 subject: mailSubject,
                 html: isMarkdown ? converter.makeHtml(mailBody) : mailBody,
                 attachments: [
@@ -271,8 +268,7 @@ router.post('/sendMail/:customEmail', [
     check('mailSubject').not().isEmpty(),
     check('mailBody').not().isEmpty().trim().escape(),
     check('isMarkdown').not().isEmpty().isBoolean(),
-    param('customEmail').not().isEmpty().isEmail(),
-    check('x-access-token').not().isEmpty().isIn([ACCESS_TOKEN])
+    param('customEmail').not().isEmpty().isEmail()
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -292,7 +288,7 @@ router.post('/sendMail/:customEmail', [
 
         const msg = {
             to: customEmail,
-            from: 'test@example.com',
+            from: FROM_EMAIL,
             subject: mailSubject,
             html: isMarkdown ? converter.makeHtml(mailBody) : mailBody,
             attachments: [
