@@ -89,7 +89,7 @@ router.post('/sendMail', [
             err: errors.array()
         });
     } else {
-        const {eventName, mailSubject, mailBody, sendTo, gender, isMarkdown, day} = req.body;
+        const {eventName, mailSubject, mailBody, sendTo, gender, isMarkdown, day, specific} = req.body;
         const instance = axios.create({
             baseURL: BASE_URL,
             timeout: 1000,
@@ -105,7 +105,8 @@ router.post('/sendMail', [
                         day: day,
                         query: {
                             key: 'gender',
-                            value: gender === 'female' ? 'F' : 'M'
+                            value: gender === 'female' ? 'F' : 'M',
+                            specific: specific
                         }
                     });
                 } catch (e) {
@@ -119,7 +120,8 @@ router.post('/sendMail', [
                         day: day,
                         query: {
                             key: 'gender',
-                            value: gender === 'female' ? 'F' : 'M'
+                            value: gender === 'female' ? 'F' : 'M',
+                            specific: specific
                         }
                     });
                 } catch (e) {
@@ -132,7 +134,8 @@ router.post('/sendMail', [
                         event: eventName,
                         query: {
                             key: 'gender',
-                            value: gender === 'female' ? 'F' : 'M'
+                            value: gender === 'female' ? 'F' : 'M',
+                            specific: specific
                         }
                     });
                 } catch (e) {
