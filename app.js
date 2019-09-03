@@ -20,7 +20,7 @@ if (!process.env.FROM_EMAIL) {
 }
 
 app.use(bodyParser.urlencoded({
-    extended: true
+    extended: false
 }));
 app.use(bodyParser.json());
 app.use('/api/v1/', routes);
