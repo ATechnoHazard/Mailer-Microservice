@@ -15,7 +15,7 @@ if (!process.env.ACCESS_TOKEN) {
 }
 
 app.use(bodyParser.urlencoded({
-    extended: true
+    extended: false
 }));
 app.use(bodyParser.json());
 app.use('/api/v1/', routes);
