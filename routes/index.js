@@ -30,9 +30,10 @@ router.get('/', (req, res) => {
  * @apiParam {String} mailSubject Subject of the mail to be sent
  * @apiParam {String} mailBody Body of the mail to be sent
  * @apiParam {String="absent", "present", "both"} sendTo Target audience
- * @apiParam {String="male", "female", "both"} gender Target audience gender
  * @apiParam {Boolean} isMarkdown Whether the mail body is formatted with markdown
  * @apiParam {Number} day The event day
+ * @apiParam {String} key The key to search hades backend for. Can be empty
+ * @apiParam {String} value The key to search hades backend. Can be empty
  *
  * @apiHeader {String} x-access-token A token to authorize use of this endpoint
  *
@@ -77,19 +78,22 @@ router.post('/sendMail', [
     check('mailSubject').not().isEmpty(),
     check('mailBody').not().isEmpty().trim().escape(),
     check('sendTo').not().isEmpty().isIn(['absent', 'present', 'both']),
-    check('gender').not().isEmpty().isIn(['male', 'female', 'both']),
     check('isMarkdown').not().isEmpty().isBoolean(),
-    check('day').not().isEmpty().isInt()
+    check('day').not().isEmpty().isInt(),
+    check('key').trim().escape(),
+    check('value').trim().escape()
 ], async (req, res) => {
     const errors = validationResult(req);
     const accessToken = req.header('x-access-token');
+    console.log(req.body);
     if (!errors.isEmpty()) {
+        // console.log(errors);
         return res.status(422).send({
             status: "ValidationFailed",
             err: errors.array()
         });
     } else {
-        const {eventName, mailSubject, mailBody, sendTo, gender, isMarkdown, day, specific} = req.body;
+        const {eventName, mailSubject, mailBody, sendTo, isMarkdown, day, specific, key, value} = req.body;
         const instance = axios.create({
             baseURL: BASE_URL,
             timeout: 1000,
@@ -100,51 +104,68 @@ router.post('/sendMail', [
         switch (sendTo) {
             case 'absent':
                 try {
-                    response = await instance.post('simple-projection/project-absent', {
+                    const data = {
                         event: eventName,
                         day: day,
                         query: {
-                            key: 'gender',
-                            value: gender === 'female' ? 'F' : 'M',
+                            key: key,
+                            value: value,
                             specific: specific
                         }
-                    });
+                    };
+                    // console.log(data);
+                    response = await instance.post('simple-projection/project-absent', data);
                 } catch (e) {
-                    console.log(e);
+                    // console.log(e);
+                    return res.status(500).send({
+                        status: "Failed",
+                        err: e
+                    });
                 }
                 break;
             case 'present':
                 try {
-                    response = await instance.post('simple-projection/project-absent', {
+                    response = await instance.post('simple-projection/project-present', {
                         event: eventName,
                         day: day,
                         query: {
-                            key: 'gender',
-                            value: gender === 'female' ? 'F' : 'M',
+                            key: key,
+                            value: value,
                             specific: specific
                         }
                     });
                 } catch (e) {
-                    console.log(e);
+                    // console.log(e);
+                    return res.status(500).send({
+                        status: "Failed",
+                        err: e
+                    });
                 }
                 break;
-            case  'both':
+            case 'both':
                 try {
-                    response = await instance.post('simple-projection/project-all', {
+                    const data = {
                         event: eventName,
+                        day: day,
                         query: {
-                            key: 'gender',
-                            value: gender === 'female' ? 'F' : 'M',
+                            key: key,
+                            value: value,
                             specific: specific
                         }
-                    });
+                    };
+                    // console.log(data);
+                    response = await instance.post('simple-projection/project-all', data);
                 } catch (e) {
-                    console.log(e);
+                    // console.log(e);
+                    return res.status(500).send({
+                        status: "Failed",
+                        err: e
+                    });
                 }
                 break;
         }
 
-        if (typeof response === 'undefined' || response.rs.length === 0) {
+        if (typeof response === undefined || response.data.rs.length === 0) {
             return res.status(500).send({
                 status: 'EmptyParticipants',
                 err: 'Participant list is empty'
@@ -153,19 +174,19 @@ router.post('/sendMail', [
             res.status(200).send({
                 status: 'success',
                 err: null,
-                participants: response.rs.length
+                participants: response.data.rs.length
             });
         }
 
-        let code;
-        try {
-            code = await qr.toDataURL(md5(participant.email + eventName));
-        } catch (e) {
-            console.log(e);
-        }
 
+        for (const participant of response.data.rs) {
+            let code;
+            try {
+                code = await qr.toDataURL(md5(participant.email + eventName));
+            } catch (e) {
+                console.log(e);
+            }
 
-        for (const participant of response.rs) {
             const msg = {
                 to: participant.email,
                 from: FROM_EMAIL,
@@ -265,7 +286,6 @@ router.post('/sendMail', [
  *          }
  *      }
  */
-
 router.post('/sendMail/:customEmail', [
     check('eventName').not().isEmpty(),
     check('mailSubject').not().isEmpty(),
@@ -275,6 +295,7 @@ router.post('/sendMail/:customEmail', [
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+        console.log(errors);
         return res.status(422).send({
             status: 'ValidationFailed',
             err: errors.array()
@@ -318,6 +339,5 @@ router.post('/sendMail/:customEmail', [
         }
     }
 });
-
 
 module.exports = router;

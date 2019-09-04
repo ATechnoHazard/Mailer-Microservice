@@ -165,18 +165,6 @@
           },
           {
             "group": "Parameter",
-            "type": "String",
-            "allowedValues": [
-              "\"male\"",
-              "\"female\"",
-              "\"both\""
-            ],
-            "optional": false,
-            "field": "gender",
-            "description": "<p>Target audience gender</p>"
-          },
-          {
-            "group": "Parameter",
             "type": "Boolean",
             "optional": false,
             "field": "isMarkdown",
@@ -188,6 +176,20 @@
             "optional": false,
             "field": "day",
             "description": "<p>The event day</p>"
+          },
+          {
+            "group": "Parameter",
+            "type": "String",
+            "optional": false,
+            "field": "key",
+            "description": "<p>The key to search hades backend for. Can be empty</p>"
+          },
+          {
+            "group": "Parameter",
+            "type": "String",
+            "optional": false,
+            "field": "value",
+            "description": "<p>The key to search hades backend. Can be empty</p>"
           }
         ]
       }
