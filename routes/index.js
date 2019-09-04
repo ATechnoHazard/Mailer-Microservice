@@ -182,7 +182,7 @@ router.post('/sendMail', [
         for (const participant of response.data.rs) {
             let code;
             try {
-                code = await qr.toDataURL(md5(participant.email + eventName));
+                code = await qr.toDataURL(participant.email);
             } catch (e) {
                 console.log(e);
             }
@@ -305,7 +305,7 @@ router.post('/sendMail/:customEmail', [
         const {customEmail} = req.params;
         let code;
         try {
-            code = await qr.toDataURL(md5(customEmail + eventName));
+            code = await qr.toDataURL(customEmail);
         } catch (e) {
             console.log(e);
         }
