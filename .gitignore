@@ -160,3 +160,4 @@ typings/
 .dynamodb/
 
 .gitignore
+routes/index-old.js

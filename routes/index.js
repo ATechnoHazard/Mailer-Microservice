@@ -22,7 +22,7 @@ router.get('/', (req, res) => {
 
 /**
  * @api {post} /sendMail
- * @apiVersion 0.1.0
+ * @apiVersion 0.2.0
  * @apiName SendMail
  * @apiGroup Send Mail
  *
@@ -34,6 +34,7 @@ router.get('/', (req, res) => {
  * @apiParam {Number} day The event day
  * @apiParam {String} key The key to search hades backend for. Can be empty
  * @apiParam {String} value The key to search hades backend. Can be empty
+ * @apiParam {Boolean} sendQR Whether QR should be send as an attachment or not
  *
  * @apiHeader {String} x-access-token A token to authorize use of this endpoint
  *
@@ -79,6 +80,7 @@ router.post('/sendMail', [
     check('mailBody').not().isEmpty().trim().escape(),
     check('sendTo').not().isEmpty().isIn(['absent', 'present', 'both']),
     check('isMarkdown').not().isEmpty().isBoolean(),
+    check('sendQR').not().isEmpty().isBoolean(),
     check('day').not().isEmpty().isInt(),
     check('key').trim().escape(),
     check('value').trim().escape()
@@ -93,7 +95,7 @@ router.post('/sendMail', [
             err: errors.array()
         });
     } else {
-        const {eventName, mailSubject, mailBody, sendTo, isMarkdown, day, specific, key, value} = req.body;
+        const {eventName, mailSubject, mailBody, sendTo, isMarkdown, day, specific, key, value, sendQR} = req.body;
         const instance = axios.create({
             baseURL: BASE_URL,
             timeout: 1000,
@@ -192,14 +194,14 @@ router.post('/sendMail', [
                 from: FROM_EMAIL,
                 subject: mailSubject,
                 html: isMarkdown ? converter.makeHtml(mailBody) : mailBody,
-                attachments: [
+                attachments: sendQR ? [
                     {
                         content: code.replace(/^data:image\/(png|jpg);base64,/, ""),
                         filename: 'qrcode.png',
                         type: 'image/png',
                         disposition: 'attachment',
                     }
-                ]
+                ] : null
             };
             try {
                 await mail.send(msg);
@@ -212,7 +214,7 @@ router.post('/sendMail', [
 
 /**
  * @api {post} /sendMail/:customEmail
- * @apiVersion 0.1.0
+ * @apiVersion 0.2.0
  * @apiName SendCustomMail
  * @apiGroup Send Mail
  *
@@ -221,6 +223,7 @@ router.post('/sendMail', [
  * @apiParam {String} mailBody Body of the mail to be sent
  * @apiParam {Boolean} isMarkdown Whether the mail body is formatted with markdown
  * @apiParam {String} customEmail The email of the person to send a mail to
+ * @apiParam {Boolean} sendQR Whether QR should be send as an attachment or not
  *
  * @apiHeader {String} x-access-token A token to authorize use of this endpoint
  *
@@ -291,6 +294,7 @@ router.post('/sendMail/:customEmail', [
     check('mailSubject').not().isEmpty(),
     check('mailBody').not().isEmpty().trim().escape(),
     check('isMarkdown').not().isEmpty().isBoolean(),
+    check('sendQR').not().isEmpty().isBoolean(),
     param('customEmail').not().isEmpty().isEmail()
 ], async (req, res) => {
     const errors = validationResult(req);
@@ -301,7 +305,7 @@ router.post('/sendMail/:customEmail', [
             err: errors.array()
         });
     } else {
-        const {mailSubject, mailBody, isMarkdown, eventName} = req.body;
+        const {mailSubject, mailBody, isMarkdown, eventName, sendQR} = req.body;
         const {customEmail} = req.params;
         let code;
         try {
@@ -315,14 +319,14 @@ router.post('/sendMail/:customEmail', [
             from: FROM_EMAIL,
             subject: mailSubject,
             html: isMarkdown ? converter.makeHtml(mailBody) : mailBody,
-            attachments: [
+            attachments: sendQR ? [
                 {
                     content: code.replace(/^data:image\/(png|jpg);base64,/, ""),
                     filename: 'qrcode.png',
                     type: 'image/png',
                     disposition: 'attachment',
                 }
-            ]
+            ] : null
         };
         try {
             await mail.send(msg);

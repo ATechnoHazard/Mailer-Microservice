@@ -1,6 +1,6 @@
 {
   "name": "mailer-microservice",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A simple QR generator and mailer microservice written in Node.js",
   "main": "app.js",
   "scripts": {
